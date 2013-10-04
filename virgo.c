@@ -47,12 +47,15 @@ static void desktop_add(desktop_t *desk, HWND hwnd)
 
 static void desktop_del(desktop_t *desk, HWND hwnd)
 {
-	int i, o = 0;
+	int i, o = -1;
 	for(i = 0; i < desk->wincount; i++) {
 		if(desk->windows[i] == hwnd) {
 			o = i;
 			break;
 		}
+	}
+	if(o == -1) {
+		return;
 	}
 	for(i = o; i < (desk->wincount - 1); i++) {
 		desk->windows[i] = desk->windows[i + 1];
