@@ -4,10 +4,9 @@
 
 static NOTIFYICONDATA nid;
 static HWND dummyHWND;
-static HBITMAP hBitmap = NULL;
-static HBITMAP hBitmapMask = NULL;
+static HBITMAP hBitmap = NULL, hBitmapMask = NULL;
 
-static HICON createSmallIcon(HWND hWnd, char *szText)
+static HICON create_icon(HWND hWnd, char *szText)
 {
 	HDC hdc, hdcMem;
 	HBITMAP hOldBitMap = NULL;
@@ -30,9 +29,9 @@ static HICON createSmallIcon(HWND hWnd, char *szText)
 
 	SetBkColor(hdcMem, RGB(0x00, 0x00, 0x00));
 	hFont = CreateFont(
-	            -MulDiv(11, GetDeviceCaps(hdcMem, LOGPIXELSY), 72),
-	            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, TEXT("Arial")
-	        );
+		-MulDiv(11, GetDeviceCaps(hdcMem, LOGPIXELSY), 72),
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, TEXT("Arial")
+	);
 	hFont = (HFONT) SelectObject(hdcMem, hFont);
 	SetTextColor(hdcMem, RGB(0x00, 0xFF, 0x00));
 	TextOut(hdcMem, bitmapWidth / 4, 0, szText, lstrlen(szText));
@@ -55,37 +54,37 @@ static HICON createSmallIcon(HWND hWnd, char *szText)
 	return hIcon;
 }
 
-void createTrayIcon()
+void trayicon_create()
 {
 	dummyHWND = CreateWindowA(
-	                "STATIC", "dummy",
-	                0, 0, 0, 0, 0,
-	                NULL, NULL, NULL, NULL
-	            );
+		"STATIC", "dummy",
+		0, 0, 0, 0, 0,
+		NULL, NULL, NULL, NULL
+	);
 	memset(&nid, 0, sizeof(nid));
 	nid.cbSize = sizeof(nid);
 	nid.hWnd = dummyHWND;
 	nid.uID = 100;
 	nid.uFlags = NIF_ICON;
-	nid.hIcon = createSmallIcon(dummyHWND, "1");
+	nid.hIcon = create_icon(dummyHWND, "1");
 	Shell_NotifyIcon(NIM_ADD, &nid);
 }
 
-void removeTrayIcon()
+void trayicon_remove()
 {
 	DeleteObject(hBitmap);
 	DeleteObject(hBitmapMask);
 	Shell_NotifyIcon(NIM_DELETE, &nid);
 }
 
-void setTrayIcon(int number)
+void trayicon_set(int number)
 {
 	char snumber[2];
 	if(number < 0 || number > 9) {
 		return;
 	}
-	snumber[0] = number + 0x30;
+	snumber[0] = number + '0';
 	snumber[1] = '\0';
-	nid.hIcon = createSmallIcon(dummyHWND, snumber);
+	nid.hIcon = create_icon(dummyHWND, snumber);
 	Shell_NotifyIcon(NIM_MODIFY, &nid);
 }

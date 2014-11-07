@@ -12,7 +12,7 @@ typedef struct desktop_t {
 } desktop_t;
 
 typedef struct windows_t {
-	HWND windows[MAX_WIN_PER_DESKTOP *NUM_DESKTOPS];
+	HWND windows[MAX_WIN_PER_DESKTOP * NUM_DESKTOPS];
 	int wincount;
 } windows_t;
 
@@ -128,7 +128,7 @@ static void init()
 		register_hotkey(i * 2  + 1, MOD_CONTROL | MOD_NOREPEAT, i + 1 + 0x30);
 	}
 	register_hotkey(i * 2, MOD_ALT | MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, 'Q');
-	createTrayIcon();
+	trayicon_create();
 }
 
 static void cleanup()
@@ -137,7 +137,7 @@ static void cleanup()
 	for(i = 0; i < NUM_DESKTOPS; i++) {
 		desktop_show(&desktops[i]);
 	}
-	removeTrayIcon();
+	trayicon_remove();
 }
 
 static void move_win_to_desk(int desk)
@@ -166,7 +166,7 @@ static void move_to_desk(int desk)
 	desktop_hide(&desktops[current]);
 	desktop_show(&desktops[desk]);
 	current = desk;
-	setTrayIcon(desk + 1);
+	trayicon_set(desk + 1);
 }
 
 int main(int argc, char **argv)
