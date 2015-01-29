@@ -1,55 +1,52 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <windows.h>
+#include "stretchy_buffer.h"
 #include "tray.h"
 
 #define NUM_DESKTOPS 4
-#define MAX_WIN_PER_DESKTOP 128
 
-typedef struct desktop_t {
-	HWND windows[MAX_WIN_PER_DESKTOP];
-	int wincount;
-} desktop_t;
-
-typedef struct windows_t {
-	HWND windows[MAX_WIN_PER_DESKTOP * NUM_DESKTOPS];
-	int wincount;
-} windows_t;
+typedef struct {
+	HWND *windows;
+	int count;
+} Windows;
 
 static int current;
-static desktop_t desktops[NUM_DESKTOPS];
+static Windows desktops[NUM_DESKTOPS];
 
-static void desktop_mod(desktop_t *desk, int state)
+static void windows_mod(Windows *wins, int state)
 {
 	int i;
-	for(i = 0; i < desk->wincount; i++) {
-		ShowWindow(desk->windows[i], state);
+	for(i = 0; i < wins->count; i++) {
+		ShowWindow(wins->windows[i], state);
 	}
 }
 
-static void desktop_show(desktop_t *desk)
+static void windows_show(Windows *wins)
 {
-	desktop_mod(desk, SW_SHOW);
+	windows_mod(wins, SW_SHOW);
 }
 
-static void desktop_hide(desktop_t *desk)
+static void windows_hide(Windows *wins)
 {
-	desktop_mod(desk, SW_HIDE);
+	windows_mod(wins, SW_HIDE);
 }
 
-static void desktop_add(desktop_t *desk, HWND hwnd)
+static void windows_add(Windows *wins, HWND hwnd)
 {
-	if(desk->wincount + 1 >= MAX_WIN_PER_DESKTOP) {
-		return;
+	if(wins->count >= sb_count(wins->windows)) {
+		sb_push(wins->windows, hwnd);
+	} else {
+		wins->windows[wins->count] = hwnd;
 	}
-	desk->windows[desk->wincount++] = hwnd;
+	wins->count++;
 }
 
-static void desktop_del(desktop_t *desk, HWND hwnd)
+static void windows_del(Windows *wins, HWND hwnd)
 {
 	int i, o = -1;
-	for(i = 0; i < desk->wincount; i++) {
-		if(desk->windows[i] == hwnd) {
+	for(i = 0; i < wins->count; i++) {
+		if(wins->windows[i] == hwnd) {
 			o = i;
 			break;
 		}
@@ -57,10 +54,10 @@ static void desktop_del(desktop_t *desk, HWND hwnd)
 	if(o == -1) {
 		return;
 	}
-	for(i = o; i < (desk->wincount - 1); i++) {
-		desk->windows[i] = desk->windows[i + 1];
+	for(i = o; i < (wins->count - 1); i++) {
+		wins->windows[i] = wins->windows[i + 1];
 	}
-	desk->wincount--;
+	wins->count--;
 }
 
 static int is_valid_window(HWND hwnd)
@@ -74,17 +71,17 @@ static int is_valid_window(HWND hwnd)
 static BOOL enum_func(HWND hwnd, LPARAM lParam)
 {
 	int i;
-	windows_t *wins;
+	Windows *wins;
 	if(!is_valid_window(hwnd)) {
 		return 1;
 	}
-	wins = (windows_t *) lParam;
-	for(i = 0; i < wins->wincount; i++) {
+	wins = (Windows *) lParam;
+	for(i = 0; i < wins->count; i++) {
 		if(wins->windows[i] == hwnd) {
 			return 1;
 		}
 	}
-	desktop_add(&desktops[current], hwnd);
+	windows_add(&desktops[current], hwnd);
 
 	return 1;
 }
@@ -93,21 +90,23 @@ static void update_windows()
 {
 	int i, e;
 	HWND hwnd;
-	windows_t wins;
-	desktop_t *desk;
-	wins.wincount = 0;
+	Windows *desk;
+	Windows wins;
+	wins.windows = NULL;
+	wins.count = 0;
 	for(i = 0; i < NUM_DESKTOPS; i++) {
 		desk = &desktops[i];
-		for(e = 0; e < desk->wincount; e++) {
+		for(e = 0; e < desk->count; e++) {
 			hwnd = desk->windows[e];
 			if(GetWindowThreadProcessId(hwnd, NULL) == 0) {
-				desktop_del(desk, hwnd);
+				windows_del(desk, hwnd);
 			} else {
-				wins.windows[wins.wincount++] = hwnd;
+				windows_add(&wins, hwnd);
 			}
 		}
 	}
 	EnumWindows((WNDENUMPROC)&enum_func, (LPARAM)&wins);
+	sb_free(wins.windows);
 }
 
 static void register_hotkey(int id, int mod, int vk)
@@ -123,11 +122,12 @@ static void init()
 {
 	int i;
 	for(i = 0; i < NUM_DESKTOPS; i++) {
-		desktops[i].wincount = 0;
-		register_hotkey(i * 2, MOD_ALT | MOD_NOREPEAT, i + 1 + 0x30);
-		register_hotkey(i * 2  + 1, MOD_CONTROL | MOD_NOREPEAT, i + 1 + 0x30);
+		desktops[i].windows = NULL;
+		desktops[i].count = 0;
+		register_hotkey(i * 2, MOD_ALT|MOD_NOREPEAT, i + 1 + 0x30);
+		register_hotkey(i * 2  + 1, MOD_CONTROL|MOD_NOREPEAT, i + 1 + 0x30);
 	}
-	register_hotkey(i * 2, MOD_ALT | MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, 'Q');
+	register_hotkey(i * 2, MOD_ALT|MOD_CONTROL|MOD_SHIFT|MOD_NOREPEAT, 'Q');
 	trayicon_create();
 }
 
@@ -135,7 +135,8 @@ static void cleanup()
 {
 	int i;
 	for(i = 0; i < NUM_DESKTOPS; i++) {
-		desktop_show(&desktops[i]);
+		windows_show(&desktops[i]);
+		sb_free(desktops[i].windows);
 	}
 	trayicon_remove();
 }
@@ -152,8 +153,8 @@ static void move_win_to_desk(int desk)
 	if(hwnd == NULL || !is_valid_window(hwnd)) {
 		return;
 	}
-	desktop_del(&desktops[current], hwnd);
-	desktop_add(&desktops[desk], hwnd);
+	windows_del(&desktops[current], hwnd);
+	windows_add(&desktops[desk], hwnd);
 	ShowWindow(hwnd, SW_HIDE);
 }
 
@@ -163,8 +164,8 @@ static void move_to_desk(int desk)
 		return;
 	}
 	update_windows();
-	desktop_hide(&desktops[current]);
-	desktop_show(&desktops[desk]);
+	windows_hide(&desktops[current]);
+	windows_show(&desktops[desk]);
 	current = desk;
 	trayicon_set(desk + 1);
 }

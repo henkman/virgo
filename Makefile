@@ -1,7 +1,7 @@
 CC=gcc
 SRCS=virgo.c tray.c
 OBJS=$(SRCS:.c=.o)
-CFLAGS=-O2 -std=c90 -Wall 
+CFLAGS=-O2 -std=c99 -Wall 
 LDFLAGS=-s -lgdi32 -mwindows
 ARCH=32
 ifeq ($(ARCH), 64)
