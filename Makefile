@@ -2,7 +2,7 @@ CC=gcc
 SRCS=virgo.c tray.c
 OBJS=$(SRCS:.c=.o)
 CFLAGS=-O2 -std=c99 -Wall 
-LDFLAGS=-s -lgdi32 -mwindows
+LDFLAGS=-s -lgdi32 -Wl,-subsystem,windows
 ARCH=32
 ifeq ($(ARCH), 64)
 	WINDRES_ARCH=pe-x86-64
