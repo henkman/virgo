@@ -1,8 +1,8 @@
-CC=gcc
-SRCS=virgo.c tray.c
+
+SRCS=virgo.c
 OBJS=$(SRCS:.c=.o)
-CFLAGS=-O2 -std=c99 -Wall 
-LDFLAGS=-s -lgdi32 -Wl,-subsystem,windows
+CFLAGS=-O2 -std=c99 -Wall -fno-ident -ffunction-sections -fdata-sections
+LDFLAGS=-static -s -lgdi32 -Wl,-subsystem,windows,--gc-sections
 ARCH=32
 ifeq ($(ARCH), 64)
 	WINDRES_ARCH=pe-x86-64
