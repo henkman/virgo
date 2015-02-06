@@ -72,7 +72,7 @@ static HICON trayicon_draw(Trayicon *t, char *text, int len)
 	SetTextColor(hdcMem, RGB(0x00, 0xFF, 0x00));
 	TextOut(hdcMem, t->bitmapWidth / 4, 0, text, len);
 	SelectObject(hdcMem, hOldBitMap);
-    hOldBitMap = NULL;
+	hOldBitMap = NULL;
 	hIcon = CreateIconIndirect(&iconInfo);
 	DeleteObject(SelectObject(hdcMem, hFont));
 	DeleteDC(hdcMem);
