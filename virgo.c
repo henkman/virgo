@@ -36,20 +36,21 @@ typedef struct {
 	Trayicon trayicon;
 } Virgo;
 
-static void * stb__sbgrowf(void *arr, int increment, int itemsize)
+static void *stb__sbgrowf(void *arr, int increment, int itemsize)
 {
 	int dbl_cur = arr ? 2*stb__sbm(arr) : 0;
 	int min_needed = sb_count(arr) + increment;
 	int m = dbl_cur > min_needed ? dbl_cur : min_needed;
 	int *p = realloc(arr ? stb__sbraw(arr) : 0, itemsize * m + sizeof(int)*2);
-	if (p) {
-		if (!arr)
+	if(p) {
+		if(!arr) {
 			p[1] = 0;
+		}
 		p[0] = m;
 		return p+2;
 	} else {
 		exit(1);
-		return (void *) (2*sizeof(int));
+		return (void *)(2*sizeof(int));
 	}
 }
 
@@ -60,7 +61,6 @@ static HICON trayicon_draw(Trayicon *t, char *text, int len)
 	HBITMAP hOldBitMap;
 	HDC hdcMem;
 	ICONINFO iconInfo = {TRUE, 0, 0, t->hBitmap, t->hBitmap};
-
 	hdcMem = CreateCompatibleDC(t->hdc);
 	SetBkColor(hdcMem, RGB(0x00, 0x00, 0x00));
 	hOldBitMap = (HBITMAP) SelectObject(hdcMem, t->hBitmap);
@@ -101,7 +101,7 @@ static void trayicon_init(Trayicon *t)
 static void trayicon_set(Trayicon *t, int number)
 {
 	char snumber[2];
-	if(number < 0 || number > 9) {
+	if(number<0 || number>9) {
 		return;
 	}
 	snumber[0] = number + '0';
@@ -177,7 +177,8 @@ static int is_valid_window(HWND hwnd)
 static void register_hotkey(int id, int mod, int vk)
 {
 	if(RegisterHotKey(NULL, id, mod, vk) == 0) {
-		fprintf(stderr, "could not register key\n");
+		MessageBox(NULL, "could not register hotkey", "error",
+			MB_ICONEXCLAMATION);
 		exit(1);
 	}
 }
@@ -288,7 +289,7 @@ int main(int argc, char **argv)
 		if(msg.wParam%2 == 0) {
 			virgo_go_to_desk(&v, msg.wParam/2);
 		} else {
-			virgo_move_to_desk(&v, (msg.wParam-1) / 2);
+			virgo_move_to_desk(&v, (msg.wParam-1)/2);
 		}
 	}
 	virgo_deinit(&v);
