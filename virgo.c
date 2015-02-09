@@ -274,7 +274,12 @@ static void virgo_go_to_desk(Virgo *v, int desk)
 	trayicon_set(&v->trayicon, v->current+1);
 }
 
+#ifdef RELEASE
+int main(void) asm("main");
+int main(void)
+#else
 int main(int argc, char **argv)
+#endif
 {
 	Virgo v;
 	MSG msg;

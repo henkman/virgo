@@ -1,8 +1,9 @@
 
 SRCS=virgo.c
 OBJS=$(SRCS:.c=.o)
-CFLAGS=-O2 -std=c99 -Wall -fno-ident -ffunction-sections -fdata-sections
-LDFLAGS=-static -s -lgdi32 -Wl,-subsystem,windows,--gc-sections
+CFLAGS=-O2 -nostdlib -Wall -fno-ident -ffunction-sections -fdata-sections -DRELEASE=1
+LIBS=-luser32 -lshell32 -lmsvcrt -lkernel32
+LDFLAGS=-static -nostdlib -fno-builtin -s -lgdi32 -Wl,-subsystem,windows,--gc-sections $(LIBS)
 ARCH=32
 ifeq ($(ARCH), 64)
 	WINDRES_ARCH=pe-x86-64
