@@ -275,8 +275,8 @@ static void virgo_go_to_desk(Virgo *v, int desk)
 }
 
 #ifdef RELEASE
-int main(void) asm("main");
-int main(void)
+extern int __main(void) asm("__main");
+int __main(void)
 #else
 int main(int argc, char **argv)
 #endif
