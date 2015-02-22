@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <windows.h>
 
@@ -101,7 +100,7 @@ static void trayicon_init(Trayicon *t)
 static void trayicon_set(Trayicon *t, int number)
 {
 	char snumber[2];
-	if(number<0 || number>9) {
+	if(!(number>=0 && number<=9)) {
 		return;
 	}
 	snumber[0] = number + '0';
@@ -149,21 +148,20 @@ static void windows_del(Windows *wins, HWND hwnd)
 {
 	int i, m;
 	for(i=0; i<wins->count; i++) {
-		if(wins->windows[i] == hwnd) {
-			goto remove;
+		if(wins->windows[i] != hwnd) {
+			continue;
 		}
+		m = wins->count-i-1;
+		if(m > 0) {
+			memcpy(
+				&(wins->windows[i]),
+				&(wins->windows[i+1]),
+				sizeof(HWND)*m
+			);
+		}
+		wins->count--;
+		break;		
 	}
-	return;
-remove:
-	m = wins->count-i-1;
-	if(m > 0) {
-		memcpy(
-			&(wins->windows[i]),
-			&(wins->windows[i+1]),
-			sizeof(HWND)*m
-		);
-	}
-	wins->count--;
 }
 
 static int is_valid_window(HWND hwnd)
@@ -176,7 +174,7 @@ static int is_valid_window(HWND hwnd)
 
 static void register_hotkey(int id, int mod, int vk)
 {
-	if(RegisterHotKey(NULL, id, mod, vk) == 0) {
+	if(!RegisterHotKey(NULL, id, mod, vk)) {
 		MessageBox(NULL, "could not register hotkey", "error",
 			MB_ICONEXCLAMATION);
 		exit(1);
@@ -213,7 +211,7 @@ static void virgo_update(Virgo *v)
 		desk = &(v->desktops[i]);
 		for(e=0; e<desk->count; e++) {
 			hwnd = desk->windows[e];
-			if(GetWindowThreadProcessId(desk->windows[e], NULL) == 0) {
+			if(!GetWindowThreadProcessId(desk->windows[e], NULL)) {
 				windows_del(desk, hwnd);
 			}
 		}
@@ -254,7 +252,7 @@ static void virgo_move_to_desk(Virgo *v, int desk)
 	}
 	virgo_update(v);
 	hwnd = GetForegroundWindow();
-	if(hwnd==NULL || !is_valid_window(hwnd)) {
+	if(!hwnd || !is_valid_window(hwnd)) {
 		return;
 	}
 	windows_del(&v->desktops[v->current], hwnd);
@@ -284,7 +282,7 @@ int main(int argc, char **argv)
 	Virgo v;
 	MSG msg;
 	virgo_init(&v);
-	while(GetMessage(&msg, NULL, 0, 0) != 0) {
+	while(GetMessage(&msg, NULL, 0, 0)) {
 		if(msg.message != WM_HOTKEY) {
 			continue;
 		}
