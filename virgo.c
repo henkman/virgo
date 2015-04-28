@@ -279,7 +279,7 @@ int __main(void)
 int main(int argc, char **argv)
 #endif
 {
-	static Virgo v;
+	Virgo v;
 	MSG msg;
 	virgo_init(&v);
 	while(GetMessage(&msg, NULL, 0, 0)) {
