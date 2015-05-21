@@ -2,7 +2,7 @@
 SRCS=virgo.c
 OBJS=$(SRCS:.c=.o)
 CFLAGS=-O3 -nostdlib -fno-asynchronous-unwind-tables -fno-builtin -fno-ident -ffunction-sections -fdata-sections  -Wall -DRELEASE=1
-LIBS=-lgdi32 -luser32 -lshell32 -lkernel32
+LIBS=-lgdi32 -lmsvcrt -luser32 -lshell32 -lkernel32
 LDFLAGS=-static -nostdlib -fno-builtin -s -Wl,-e,__main,--gc-sections,-subsystem,windows $(LIBS)
 ARCH=32
 ifeq ($(ARCH), 64)

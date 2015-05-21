@@ -1,294 +1,24 @@
-typedef void* HANDLE;
-typedef HANDLE HWND;
-typedef HANDLE HDC;
-typedef HANDLE HBITMAP;
-typedef HANDLE HICON;
-typedef char TCHAR;
-typedef HANDLE HFONT;
-typedef int BOOL;
-typedef unsigned short WORD;
-typedef unsigned char BYTE;
-typedef unsigned long DWORD;
-typedef unsigned int UINT;
-typedef long LONG;
-typedef long LONG_PTR;
-typedef unsigned int UINT_PTR;
-typedef HANDLE HGDIOBJ;
-typedef HANDLE HINSTANCE;
-typedef HANDLE HMENU;
-typedef WORD ATOM;
-typedef unsigned long ULONG_PTR;
-typedef ULONG_PTR SIZE_T;
+#include <stdlib.h>
+#include <string.h>
+#include <windows.h>
 
-typedef struct GUID {
-  DWORD Data1;
-  WORD  Data2;
-  WORD  Data3;
-  BYTE  Data4[8];
-} GUID;
+#define sb_free(a)   ((a) ? free(stb__sbraw(a)),0 : 0)
+#define sb_push(a,v) (stb__sbmaybegrow(a,1), (a)[stb__sbn(a)++] = (v))
+#define sb_count(a)  ((a) ? stb__sbn(a) : 0)
 
-typedef struct NOTIFYICONDATA {
-  DWORD cbSize;
-  HWND  hWnd;
-  UINT  uID;
-  UINT  uFlags;
-  UINT  uCallbackMessage;
-  HICON hIcon;
-  TCHAR szTip[64];
-  DWORD dwState;
-  DWORD dwStateMask;
-  TCHAR szInfo[256];
-  union {
-    UINT uTimeout;
-    UINT uVersion;
-  };
-  TCHAR szInfoTitle[64];
-  DWORD dwInfoFlags;
-  GUID  guidItem;
-  HICON hBalloonIcon;
-} NOTIFYICONDATA;
+#define stb__sbraw(a) ((int *) (a) - 2)
+#define stb__sbm(a)   stb__sbraw(a)[0]
+#define stb__sbn(a)   stb__sbraw(a)[1]
 
-typedef struct ICONINFO {
-  BOOL    fIcon;
-  DWORD   xHotspot;
-  DWORD   yHotspot;
-  HBITMAP hbmMask;
-  HBITMAP hbmColor;
-} ICONINFO;
-
-typedef struct POINT {
-  LONG x;
-  LONG y;
-} POINT;
-
-typedef struct MSG {
-  HWND   hwnd;
-  UINT   message;
-  UINT_PTR wParam;
-  LONG_PTR lParam;
-  DWORD  time;
-  POINT  pt;
-} MSG;
-
-typedef struct RECT {
-  LONG left;
-  LONG top;
-  LONG right;
-  LONG bottom;
-} RECT;
-
-typedef struct WINDOWINFO {
-  DWORD cbSize;
-  RECT  rcWindow;
-  RECT  rcClient;
-  DWORD dwStyle;
-  DWORD dwExStyle;
-  DWORD dwWindowStatus;
-  UINT  cxWindowBorders;
-  UINT  cyWindowBorders;
-  ATOM  atomWindowType;
-  WORD  wCreatorVersion;
-} WINDOWINFO;
-
-extern __stdcall HDC CreateCompatibleDC(HDC hdc);
-typedef DWORD COLORREF;
-extern __stdcall COLORREF SetBkColor(HDC hdc, COLORREF crColor);
-extern __stdcall HFONT CreateFontA(
-  int     nHeight,
-  int     nWidth,
-  int     nEscapement,
-  int     nOrientation,
-  int     fnWeight,
-  DWORD   fdwItalic,
-  DWORD   fdwUnderline,
-  DWORD   fdwStrikeOut,
-  DWORD   fdwCharSet,
-  DWORD   fdwOutputPrecision,
-  DWORD   fdwClipPrecision,
-  DWORD   fdwQuality,
-  DWORD   fdwPitchAndFamily,
-  char * lpszFace
-);
-extern __stdcall HGDIOBJ SelectObject(
-  HDC     hdc,
-  HGDIOBJ hgdiobj
-);
-extern __stdcall int GetDeviceCaps(
-  HDC hdc,
-  int nIndex
-);
-extern __stdcall int MulDiv(
-  int nNumber,
-  int nNumerator,
-  int nDenominator
-);
-extern __stdcall COLORREF SetTextColor(
-   HDC      hdc,
-   COLORREF crColor
-);
-extern __stdcall BOOL TextOutA(
-   HDC     hdc,
-   int     nXStart,
-   int     nYStart,
-   char * lpString,
-   int     cchString
-);
-
-#define RGB(r,g,b) ((COLORREF)(((BYTE)(r)|((WORD)((BYTE)(g))<<8))|(((DWORD)(BYTE)(b))<<16)))
-
-extern __stdcall HICON CreateIconIndirect(
-  ICONINFO *piconinfo
-);
-extern __stdcall BOOL DeleteObject(
-  HGDIOBJ hObject
-);
-extern __stdcall BOOL DeleteDC(
-  HDC hdc
-);
-extern __stdcall HWND CreateWindowExA(
-	DWORD     dwExStyle,
-  char *   lpClassName,
-  char *  lpWindowName,
-   DWORD     dwStyle,
-   int       x,
-   int       y,
-   int       nWidth,
-   int       nHeight,
-   HWND      hWndParent,
-   HMENU     hMenu,
-   HINSTANCE hInstance,
-   void *    lpParam
-);
-extern __stdcall HDC GetDC(
-    HWND hWnd
-);
-extern __stdcall int  GetSystemMetrics(
-   int nIndex
-);
-extern __stdcall HBITMAP CreateCompatibleBitmap(
-    HDC hdc,
-    int nWidth,
-    int nHeight
-);
-extern __stdcall BOOL Shell_NotifyIcon(
-   DWORD           dwMessage,
-   NOTIFYICONDATA *lpdata
-);
-extern __stdcall int ReleaseDC(
-    HWND hWnd,
-    HDC  hDC
-);
-static int SW_HIDE = 0;
-static int SW_SHOW = 5;
-extern __stdcall BOOL  ShowWindow(
-   HWND hWnd,
-   int  nCmdShow
-);
-
-extern __stdcall HANDLE GetProcessHeap(void);
-
-extern __stdcall void *HeapAlloc(
-   HANDLE hHeap,
-   DWORD  dwFlags,
-   SIZE_T dwBytes
-);
-extern __stdcall void *HeapReAlloc(
-   HANDLE hHeap,
-   DWORD  dwFlags,
-  void * lpMem,
-   SIZE_T dwBytes
-);
-extern __stdcall void CopyMemory(
-         void *  Destination,
-   void *Source,
-         SIZE_T Length
-);
-extern __stdcall BOOL HeapFree(
-   HANDLE hHeap,
-   DWORD  dwFlags,
-   void *lpMem
-);
-extern __stdcall BOOL GetWindowInfo(
-     HWND        hwnd,
-   WINDOWINFO *pwi
-);
-extern __stdcall BOOL RegisterHotKey(
-   HWND hWnd,
-       int  id,
-       UINT fsModifiers,
-       UINT vk
-);
-
-extern __stdcall int MessageBoxA(
-   HWND    hWnd,
-   char * lpText,
-   char * lpCaption,
-       UINT    uType
-);
-extern __stdcall void ExitProcess(
-   UINT uExitCode
-);
-extern __stdcall DWORD GetWindowThreadProcessId(
-        HWND    hWnd,
-   WORD *lpdwProcessId
-);
-
-typedef __stdcall BOOL (*WNDENUMPROC) (HWND hwnd, LONG_PTR lParam);
-extern __stdcall BOOL EnumWindows(
-   WNDENUMPROC lpEnumFunc,
-   LONG_PTR      lParam
-);
-
-extern __stdcall HWND GetForegroundWindow(void);
-extern __stdcall BOOL GetMessageA(
-  MSG *lpMsg,
-  HWND  hWnd,
-       UINT  wMsgFilterMin,
-       UINT  wMsgFilterMax
-);
-
-#define SM_CXSMICON 49
-
-#define MB_ICONEXCLAMATION 0x00000030L
-
-#define MOD_ALT 0x0001
-#define MOD_CONTROL 0x0002
-#define MOD_NOREPEAT 0x4000
-#define MOD_SHIFT 0x0004
-#define LOGPIXELSY 90
-
-#define WM_HOTKEY                       0x0312
-#define WS_VISIBLE 0x10000000L
-#define WS_EX_TOOLWINDOW 0x00000080L
-#define NIF_ICON (0x00000002)
-#define NIM_ADD (0x00000000)
-#define NIM_MODIFY (0x00000001)
-#define NIM_DELETE (0x00000002)
-
-typedef unsigned int size_t;
-#define NULL ((void*)0)
-
-/////////////////////////////////////////////
+#define stb__sbneedgrow(a,n)  ((a)==0 || stb__sbn(a)+(n) >= stb__sbm(a))
+#define stb__sbmaybegrow(a,n) (stb__sbneedgrow(a,(n)) ? stb__sbgrow(a,n) : 0)
+#define stb__sbgrow(a,n)      ((a) = stb__sbgrowf((a), (n), sizeof(*(a))))
 
 #define NUM_DESKTOPS 4
-
-static void memset(void *dst, unsigned char v, size_t n)
-{
-	unsigned char *p = dst;
-	while(n--) *p++ = v;
-}
-
-static void memcpy(void *dst, void *src, size_t n)
-{
-	unsigned char *d = dst;
-	unsigned char *s = src;
-	while(n--) *d++ = *s++;
-}
 
 typedef struct {
 	HWND *windows;
 	int count;
-	int capacity;
 } Windows;
 
 typedef struct {
@@ -305,23 +35,41 @@ typedef struct {
 	Trayicon trayicon;
 } Virgo;
 
+static void *stb__sbgrowf(void *arr, int increment, int itemsize)
+{
+	int dbl_cur = arr ? 2*stb__sbm(arr) : 0;
+	int min_needed = sb_count(arr) + increment;
+	int m = dbl_cur > min_needed ? dbl_cur : min_needed;
+	int *p = realloc(arr ? stb__sbraw(arr) : 0, itemsize * m + sizeof(int)*2);
+	if(p) {
+		if(!arr) {
+			p[1] = 0;
+		}
+		p[0] = m;
+		return p+2;
+	} else {
+		exit(1);
+		return (void *)(2*sizeof(int));
+	}
+}
+
 static HICON trayicon_draw(Trayicon *t, char *text, int len)
 {
 	HICON hIcon;
 	HFONT hFont;
 	HBITMAP hOldBitMap;
 	HDC hdcMem;
-	ICONINFO iconInfo = {1, 0, 0, t->hBitmap, t->hBitmap};
+	ICONINFO iconInfo = {TRUE, 0, 0, t->hBitmap, t->hBitmap};
 	hdcMem = CreateCompatibleDC(t->hdc);
 	SetBkColor(hdcMem, RGB(0x00, 0x00, 0x00));
 	hOldBitMap = (HBITMAP) SelectObject(hdcMem, t->hBitmap);
-	hFont = CreateFontA(
+	hFont = CreateFont(
 		-MulDiv(11, GetDeviceCaps(hdcMem, LOGPIXELSY), 72),
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Arial"
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, TEXT("Arial")
 	);
 	hFont = (HFONT) SelectObject(hdcMem, hFont);
 	SetTextColor(hdcMem, RGB(0x00, 0xFF, 0x00));
-	TextOutA(hdcMem, t->bitmapWidth / 4, 0, text, len);
+	TextOut(hdcMem, t->bitmapWidth / 4, 0, text, len);
 	SelectObject(hdcMem, hOldBitMap);
 	hOldBitMap = NULL;
 	hIcon = CreateIconIndirect(&iconInfo);
@@ -332,7 +80,7 @@ static HICON trayicon_draw(Trayicon *t, char *text, int len)
 
 static void trayicon_init(Trayicon *t)
 {
-	t->dummyHWND = CreateWindowExA(0,
+	t->dummyHWND = CreateWindowA(
 		"STATIC", "dummy",
 		0, 0, 0, 0, 0,
 		NULL, NULL, NULL, NULL
@@ -388,18 +136,12 @@ static void windows_hide(Windows *wins)
 
 static void windows_add(Windows *wins, HWND hwnd)
 {
-	if(wins->count == wins->capacity) {
-		if(wins->windows == NULL) {
-			wins->capacity = 16;
-			wins->windows = HeapAlloc(GetProcessHeap(),
-				0, (SIZE_T)(sizeof(HWND)*wins->capacity));
-		} else {
-			wins->capacity *= 2;
-			wins->windows = HeapReAlloc(GetProcessHeap(),
-				0, wins->windows, (SIZE_T)(sizeof(HWND)*wins->capacity));
-		}
+	if(wins->count >= sb_count(wins->windows)) {
+		sb_push(wins->windows, hwnd);
+	} else {
+		wins->windows[wins->count] = hwnd;
 	}
-	wins->windows[wins->count++] = hwnd;
+	wins->count++;
 }
 
 static void windows_del(Windows *wins, HWND hwnd)
@@ -414,17 +156,12 @@ static void windows_del(Windows *wins, HWND hwnd)
 			memcpy(
 				&(wins->windows[i]),
 				&(wins->windows[i+1]),
-				(SIZE_T)(sizeof(HWND)*m)
+				sizeof(HWND)*m
 			);
 		}
 		wins->count--;
 		break;		
 	}
-}
-
-static void windows_destroy(Windows *wins)
-{
-	HeapFree(GetProcessHeap(), 0, wins->windows);
 }
 
 static int is_valid_window(HWND hwnd)
@@ -438,13 +175,13 @@ static int is_valid_window(HWND hwnd)
 static void register_hotkey(int id, int mod, int vk)
 {
 	if(!RegisterHotKey(NULL, id, mod, vk)) {
-		MessageBoxA(NULL, "could not register hotkey", "error",
+		MessageBox(NULL, "could not register hotkey", "error",
 			MB_ICONEXCLAMATION);
-		ExitProcess(1);
+		exit(1);
 	}
 }
 
-static BOOL enum_func(HWND hwnd, LONG_PTR lParam)
+static BOOL enum_func(HWND hwnd, LPARAM lParam)
 {
 	int i, e;
 	Virgo *v;
@@ -479,7 +216,7 @@ static void virgo_update(Virgo *v)
 			}
 		}
 	}
-	EnumWindows((WNDENUMPROC)&enum_func, (LONG_PTR)v);
+	EnumWindows((WNDENUMPROC)&enum_func, (LPARAM)v);
 }
 
 static void virgo_init(Virgo *v)
@@ -490,7 +227,6 @@ static void virgo_init(Virgo *v)
 	for(i=0; i<NUM_DESKTOPS; i++) {
 		v->desktops[i].windows = NULL;
 		v->desktops[i].count = 0;
-		v->desktops[i].capacity = 0;
 		register_hotkey(i*2, MOD_ALT|MOD_NOREPEAT, i+1+0x30);
 		register_hotkey(i*2+1, MOD_CONTROL|MOD_NOREPEAT, i+1+0x30);
 	}
@@ -503,7 +239,7 @@ static void virgo_deinit(Virgo *v)
 	int i;
 	for(i=0; i<NUM_DESKTOPS; i++) {
 		windows_show(&v->desktops[i]);
-		windows_destroy(&v->desktops[i]);
+		sb_free(v->desktops[i].windows);
 	}
 	trayicon_deinit(&v->trayicon);
 }
@@ -546,7 +282,7 @@ int main(int argc, char **argv)
 	Virgo v;
 	MSG msg;
 	virgo_init(&v);
-	while(GetMessageA(&msg, NULL, 0, 0)) {
+	while(GetMessage(&msg, NULL, 0, 0)) {
 		if(msg.message != WM_HOTKEY) {
 			continue;
 		}
@@ -560,5 +296,5 @@ int main(int argc, char **argv)
 		}
 	}
 	virgo_deinit(&v);
-	return 0;
+	return EXIT_SUCCESS;
 }
