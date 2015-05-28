@@ -14,6 +14,10 @@
 #define stb__sbmaybegrow(a,n) (stb__sbneedgrow(a,(n)) ? stb__sbgrow(a,n) : 0)
 #define stb__sbgrow(a,n)      ((a) = stb__sbgrowf((a), (n), sizeof(*(a))))
 
+#ifndef MOD_NOREPEAT
+#define MOD_NOREPEAT 0x4000
+#endif
+
 #define NUM_DESKTOPS 4
 
 typedef struct {
@@ -49,7 +53,7 @@ static void *stb__sbgrowf(void *arr, int increment, int itemsize)
 		p[0] = m;
 		return p+2;
 	} else {
-		exit(1);
+		ExitProcess(1);
 		return (void *)(2*sizeof(int));
 	}
 }
@@ -115,6 +119,7 @@ static void trayicon_deinit(Trayicon *t)
 	DeleteObject(t->hBitmap);
 	ReleaseDC(t->dummyHWND, t->hdc);
 	Shell_NotifyIcon(NIM_DELETE, &t->nid);
+	DestroyWindow(t->dummyHWND);
 }
 
 static void windows_mod(Windows *wins, int state)
@@ -178,7 +183,7 @@ static void register_hotkey(int id, int mod, int vk)
 	if(!RegisterHotKey(NULL, id, mod, vk)) {
 		MessageBox(NULL, "could not register hotkey", "error",
 			MB_ICONEXCLAMATION);
-		exit(1);
+		ExitProcess(1);
 	}
 }
 
@@ -220,9 +225,25 @@ static void virgo_update(Virgo *v)
 	EnumWindows((WNDENUMPROC)&enum_func, (LPARAM)v);
 }
 
+static void virgo_toggle_hotkeys(Virgo *v)
+{
+	int i;
+	v->handle_hotkeys = !v->handle_hotkeys;
+	if(v->handle_hotkeys) {
+		for(i=0; i<NUM_DESKTOPS; i++) {
+			register_hotkey(i*2, MOD_ALT|MOD_NOREPEAT, i+1+0x30);
+			register_hotkey(i*2+1, MOD_CONTROL|MOD_NOREPEAT, i+1+0x30);
+		}
+	} else {
+		for(i=0; i<NUM_DESKTOPS; i++) {
+			UnregisterHotKey(NULL, i*2);
+			UnregisterHotKey(NULL, i*2+1);
+		}
+	}
+}
+
 static void virgo_init(Virgo *v)
 {
-	#define MOD_NOREPEAT 0x4000
 	int i;
 	v->current = 0;
 	v->handle_hotkeys = 1;
@@ -233,7 +254,7 @@ static void virgo_init(Virgo *v)
 		register_hotkey(i*2+1, MOD_CONTROL|MOD_NOREPEAT, i+1+0x30);
 	}
 	register_hotkey(i*2, MOD_ALT|MOD_CONTROL|MOD_SHIFT|MOD_NOREPEAT, 'Q');
-	register_hotkey((i*2)+1, MOD_ALT|MOD_CONTROL|MOD_SHIFT|MOD_NOREPEAT, 'S');
+	register_hotkey(i*2+1, MOD_ALT|MOD_CONTROL|MOD_SHIFT|MOD_NOREPEAT, 'S');
 	trayicon_init(&v->trayicon);
 }
 
@@ -275,12 +296,8 @@ static void virgo_go_to_desk(Virgo *v, int desk)
 	trayicon_set(&v->trayicon, v->current+1);
 }
 
-#ifdef RELEASE
-extern int __main(void) asm("__main");
-int __main(void)
-#else
-int main(int argc, char **argv)
-#endif
+extern void __main(void) asm("__main");
+void __main(void)
 {
 	Virgo v;
 	MSG msg;
@@ -289,12 +306,12 @@ int main(int argc, char **argv)
 		if(msg.message != WM_HOTKEY) {
 			continue;
 		}
-		if(msg.wParam == (NUM_DESKTOPS*2)+1) {
-			v.handle_hotkeys = !v.handle_hotkeys;
+		if(msg.wParam == NUM_DESKTOPS*2) {
+			break;
+		}
+		if(msg.wParam == NUM_DESKTOPS*2+1) {
+			virgo_toggle_hotkeys(&v);
 		} else if(v.handle_hotkeys) {
-			if(msg.wParam == NUM_DESKTOPS*2) {
-				break;
-			}
 			if(msg.wParam%2 == 0) {
 				virgo_go_to_desk(&v, msg.wParam/2);
 			} else {
@@ -303,5 +320,5 @@ int main(int argc, char **argv)
 		}
 	}
 	virgo_deinit(&v);
-	return EXIT_SUCCESS;
+	ExitProcess(0);
 }
