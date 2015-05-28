@@ -31,6 +31,7 @@ typedef struct {
 
 typedef struct {
 	int current;
+	int handle_hotkeys;
 	Windows desktops[NUM_DESKTOPS];
 	Trayicon trayicon;
 } Virgo;
@@ -224,6 +225,7 @@ static void virgo_init(Virgo *v)
 	#define MOD_NOREPEAT 0x4000
 	int i;
 	v->current = 0;
+	v->handle_hotkeys = 1;
 	for(i=0; i<NUM_DESKTOPS; i++) {
 		v->desktops[i].windows = NULL;
 		v->desktops[i].count = 0;
@@ -231,6 +233,7 @@ static void virgo_init(Virgo *v)
 		register_hotkey(i*2+1, MOD_CONTROL|MOD_NOREPEAT, i+1+0x30);
 	}
 	register_hotkey(i*2, MOD_ALT|MOD_CONTROL|MOD_SHIFT|MOD_NOREPEAT, 'Q');
+	register_hotkey((i*2)+1, MOD_ALT|MOD_CONTROL|MOD_SHIFT|MOD_NOREPEAT, 'S');
 	trayicon_init(&v->trayicon);
 }
 
@@ -286,13 +289,17 @@ int main(int argc, char **argv)
 		if(msg.message != WM_HOTKEY) {
 			continue;
 		}
-		if(msg.wParam == NUM_DESKTOPS*2) {
-			break;
-		}
-		if(msg.wParam%2 == 0) {
-			virgo_go_to_desk(&v, msg.wParam/2);
-		} else {
-			virgo_move_to_desk(&v, (msg.wParam-1)/2);
+		if(msg.wParam == (NUM_DESKTOPS*2)+1) {
+			v.handle_hotkeys = !v.handle_hotkeys;
+		} else if(v.handle_hotkeys) {
+			if(msg.wParam == NUM_DESKTOPS*2) {
+				break;
+			}
+			if(msg.wParam%2 == 0) {
+				virgo_go_to_desk(&v, msg.wParam/2);
+			} else {
+				virgo_move_to_desk(&v, (msg.wParam-1)/2);
+			}
 		}
 	}
 	virgo_deinit(&v);

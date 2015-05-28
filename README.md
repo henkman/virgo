@@ -14,6 +14,7 @@ Hotkeys:
         ALT + 1..4             -> changes to desktop 1..4
         CTRL + 1..4            -> moves active window to desktop 1..4
         ALT + CTRL + SHIFT + Q -> exits the program
+        ALT + CTRL + SHIFT + S -> starts/stops handling of other hotkeys
 
 the nerds can build it with
 
