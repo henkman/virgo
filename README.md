@@ -2,7 +2,7 @@ virgo
 =====
 Virtual Desktop Manager for Windows
 
-[Download here](https://github.com/papplampe/virgo/releases/download/1.3/virgo.zip)
+[Download here](https://github.com/papplampe/virgo/releases/download/v1.4/virgo.zip)
 
 Features:
 - resource friendly, exe is <10kb on disk and uses <1mb memory while running
