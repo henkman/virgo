@@ -311,12 +311,10 @@ void __main(void)
 		}
 		if(msg.wParam == NUM_DESKTOPS*2+1) {
 			virgo_toggle_hotkeys(&v);
-		} else if(v.handle_hotkeys) {
-			if(msg.wParam%2 == 0) {
-				virgo_go_to_desk(&v, msg.wParam/2);
-			} else {
-				virgo_move_to_desk(&v, (msg.wParam-1)/2);
-			}
+		} else if(msg.wParam%2 == 0) {
+			virgo_go_to_desk(&v, msg.wParam/2);
+		} else {
+			virgo_move_to_desk(&v, (msg.wParam-1)/2);
 		}
 	}
 	virgo_deinit(&v);
