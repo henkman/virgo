@@ -222,6 +222,13 @@ static void virgo_update(Virgo *v)
 			}
 		}
 	}
+	desk = &v->desktops[v->current];
+	for(i=0; i<desk->count; i++) {
+		hwnd = desk->windows[i];
+		if(!IsWindowVisible(hwnd)) {
+			windows_del(desk, hwnd);
+		}
+	}
 	EnumWindows((WNDENUMPROC)&enum_func, (LPARAM)v);
 }
 
