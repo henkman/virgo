@@ -1,8 +1,8 @@
-#include <stdlib.h>
-#include <string.h>
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <shellapi.h>
 
-#define sb_free(a)   ((a) ? free(stb__sbraw(a)),0 : 0)
+#define sb_free(a)   ((a) ? HeapFree(GetProcessHeap(), 0, stb__sbraw(a)),0 : 0)
 #define sb_push(a,v) (stb__sbmaybegrow(a,1), (a)[stb__sbn(a)++] = (v))
 #define sb_count(a)  ((a) ? stb__sbn(a) : 0)
 
@@ -13,6 +13,13 @@
 #define stb__sbneedgrow(a,n)  ((a)==0 || stb__sbn(a)+(n) >= stb__sbm(a))
 #define stb__sbmaybegrow(a,n) (stb__sbneedgrow(a,(n)) ? stb__sbgrow(a,n) : 0)
 #define stb__sbgrow(a,n)      ((a) = stb__sbgrowf((a), (n), sizeof(*(a))))
+
+#ifdef __MINGW32__
+#ifdef RtlMoveMemory
+#undef RtlMoveMemory
+extern __stdcall void RtlMoveMemory(void *, void *, size_t);
+#endif
+#endif
 
 #ifndef MOD_NOREPEAT
 #define MOD_NOREPEAT 0x4000
@@ -45,7 +52,13 @@ static void *stb__sbgrowf(void *arr, int increment, int itemsize)
 	int dbl_cur = arr ? 2*stb__sbm(arr) : 0;
 	int min_needed = sb_count(arr) + increment;
 	int m = dbl_cur > min_needed ? dbl_cur : min_needed;
-	int *p = realloc(arr ? stb__sbraw(arr) : 0, itemsize * m + sizeof(int)*2);
+	int *p;
+	if(arr) {
+		p = HeapReAlloc(GetProcessHeap(), 0, stb__sbraw(arr),
+			itemsize*m + sizeof(int)*2);
+	} else {
+		p = HeapAlloc(GetProcessHeap(), 0, itemsize*m + sizeof(int)*2);
+	}
 	if(p) {
 		if(!arr) {
 			p[1] = 0;
@@ -86,14 +99,13 @@ static HICON trayicon_draw(Trayicon *t, char *text, int len)
 static void trayicon_init(Trayicon *t)
 {
 	t->dummyHWND = CreateWindowA(
-		"STATIC", "dummy",
+		"STATIC", "virgo",
 		0, 0, 0, 0, 0,
 		NULL, NULL, NULL, NULL
 	);
 	t->hdc = GetDC(t->dummyHWND);
 	t->bitmapWidth = GetSystemMetrics(SM_CXSMICON);
 	t->hBitmap = CreateCompatibleBitmap(t->hdc, t->bitmapWidth, t->bitmapWidth);
-	memset(&t->nid, 0, sizeof(t->nid));
 	t->nid.cbSize = sizeof(t->nid);
 	t->nid.hWnd = t->dummyHWND;
 	t->nid.uID = 100;
@@ -159,7 +171,7 @@ static void windows_del(Windows *wins, HWND hwnd)
 		}
 		m = wins->count-i-1;
 		if(m > 0) {
-			memcpy(
+			RtlMoveMemory(
 				&(wins->windows[i]),
 				&(wins->windows[i+1]),
 				sizeof(HWND)*m
@@ -252,11 +264,8 @@ static void virgo_toggle_hotkeys(Virgo *v)
 static void virgo_init(Virgo *v)
 {
 	int i;
-	v->current = 0;
 	v->handle_hotkeys = 1;
 	for(i=0; i<NUM_DESKTOPS; i++) {
-		v->desktops[i].windows = NULL;
-		v->desktops[i].count = 0;
 		register_hotkey(i*2, MOD_ALT|MOD_NOREPEAT, i+1+0x30);
 		register_hotkey(i*2+1, MOD_CONTROL|MOD_NOREPEAT, i+1+0x30);
 	}
@@ -306,7 +315,7 @@ static void virgo_go_to_desk(Virgo *v, int desk)
 void __main(void) asm("__main");
 void __main(void)
 {
-	Virgo v;
+	Virgo v = {0};
 	MSG msg;
 	virgo_init(&v);
 	while(GetMessage(&msg, NULL, 0, 0)) {
