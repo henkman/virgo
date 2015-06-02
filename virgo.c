@@ -303,7 +303,7 @@ static void virgo_go_to_desk(Virgo *v, int desk)
 	trayicon_set(&v->trayicon, v->current+1);
 }
 
-extern void __main(void) asm("__main");
+void __main(void) asm("__main");
 void __main(void)
 {
 	Virgo v;
