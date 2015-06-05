@@ -318,19 +318,27 @@ void __main(void)
 	Virgo v = {0};
 	MSG msg;
 	virgo_init(&v);
-	while(GetMessage(&msg, NULL, 0, 0)) {
-		if(msg.message != WM_HOTKEY) {
-			continue;
+	while(TRUE) 
+	{
+		if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		{
+			if(msg.message != WM_HOTKEY) {
+				continue;
+			}
+			if(msg.wParam == NUM_DESKTOPS*2) {
+				break;
+			}
+			if(msg.wParam == NUM_DESKTOPS*2+1) {
+				virgo_toggle_hotkeys(&v);
+			} else if(msg.wParam%2 == 0) {
+				virgo_go_to_desk(&v, msg.wParam/2);
+			} else {
+				virgo_move_to_desk(&v, (msg.wParam-1)/2);
+			}
 		}
-		if(msg.wParam == NUM_DESKTOPS*2) {
-			break;
-		}
-		if(msg.wParam == NUM_DESKTOPS*2+1) {
-			virgo_toggle_hotkeys(&v);
-		} else if(msg.wParam%2 == 0) {
-			virgo_go_to_desk(&v, msg.wParam/2);
-		} else {
-			virgo_move_to_desk(&v, (msg.wParam-1)/2);
+		else
+		{
+			Sleep(100);
 		}
 	}
 	virgo_deinit(&v);
