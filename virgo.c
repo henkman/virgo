@@ -34,9 +34,9 @@ typedef struct {
 
 typedef struct {
 	NOTIFYICONDATA nid;
-	HWND dummyHWND;
-	HDC hdc;
 	HBITMAP hBitmap;
+	HFONT hFont;
+	HDC mdc;
 	int bitmapWidth;
 } Trayicon;
 
@@ -71,46 +71,42 @@ static void *stb__sbgrowf(void *arr, int increment, int itemsize)
 	}
 }
 
-static HICON trayicon_draw(Trayicon *t, char *text, int len)
+static void trayicon_draw(Trayicon *t, char *text, int len)
 {
-	HICON hIcon;
-	HFONT hFont;
-	HBITMAP hOldBitMap;
-	HDC hdcMem;
-	ICONINFO iconInfo = {TRUE, 0, 0, t->hBitmap, t->hBitmap};
-	hdcMem = CreateCompatibleDC(t->hdc);
-	SetBkColor(hdcMem, RGB(0x00, 0x00, 0x00));
-	hOldBitMap = (HBITMAP) SelectObject(hdcMem, t->hBitmap);
-	hFont = CreateFont(
-		-MulDiv(11, GetDeviceCaps(hdcMem, LOGPIXELSY), 72),
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, TEXT("Arial")
-	);
-	hFont = (HFONT) SelectObject(hdcMem, hFont);
-	SetTextColor(hdcMem, RGB(0x00, 0xFF, 0x00));
-	TextOut(hdcMem, t->bitmapWidth / 4, 0, text, len);
-	SelectObject(hdcMem, hOldBitMap);
-	hOldBitMap = NULL;
-	hIcon = CreateIconIndirect(&iconInfo);
-	DeleteObject(SelectObject(hdcMem, hFont));
-	DeleteDC(hdcMem);
-	return hIcon;
+	ICONINFO iconInfo;
+	HBITMAP hOldBitmap;
+	HFONT hOldFont;
+	hOldBitmap = (HBITMAP) SelectObject(t->mdc, t->hBitmap);
+	hOldFont = (HFONT) SelectObject(t->mdc, t->hFont);
+	TextOut(t->mdc, t->bitmapWidth / 4, 0, text, len);
+	SelectObject(t->mdc, hOldBitmap);
+	SelectObject(t->mdc, hOldFont);
+	if(t->nid.hIcon) {
+		DestroyIcon(t->nid.hIcon);
+	}
+	iconInfo = (ICONINFO){TRUE, 0, 0, t->hBitmap, t->hBitmap};
+	t->nid.hIcon = CreateIconIndirect(&iconInfo);
 }
 
 static void trayicon_init(Trayicon *t)
 {
-	t->dummyHWND = CreateWindowA(
-		"STATIC", "virgo",
-		0, 0, 0, 0, 0,
-		NULL, NULL, NULL, NULL
-	);
-	t->hdc = GetDC(t->dummyHWND);
+	HDC hdc;
 	t->bitmapWidth = GetSystemMetrics(SM_CXSMICON);
-	t->hBitmap = CreateCompatibleBitmap(t->hdc, t->bitmapWidth, t->bitmapWidth);
 	t->nid.cbSize = sizeof(t->nid);
-	t->nid.hWnd = t->dummyHWND;
+	t->nid.hWnd = NULL;
 	t->nid.uID = 100;
 	t->nid.uFlags = NIF_ICON;
-	t->nid.hIcon = trayicon_draw(t, "1", 1);
+	hdc = GetDC(NULL);
+	t->hBitmap = CreateCompatibleBitmap(hdc, t->bitmapWidth, t->bitmapWidth);
+	t->mdc = CreateCompatibleDC(hdc);
+	ReleaseDC(NULL, hdc);
+	SetBkColor(t->mdc, RGB(0x00, 0x00, 0x00));
+	SetTextColor(t->mdc, RGB(0x00, 0xFF, 0x00));
+	t->hFont = CreateFont(
+		-MulDiv(11, GetDeviceCaps(t->mdc, LOGPIXELSY), 72),
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, TEXT("Arial")
+	);
+	trayicon_draw(t, "1", 1);
 	Shell_NotifyIcon(NIM_ADD, &t->nid);
 }
 
@@ -122,16 +118,17 @@ static void trayicon_set(Trayicon *t, int number)
 	}
 	snumber[0] = number + '0';
 	snumber[1] = '\0';
-	t->nid.hIcon = trayicon_draw(t, snumber, 1);
+	trayicon_draw(t, snumber, 1);
 	Shell_NotifyIcon(NIM_MODIFY, &t->nid);
 }
 
 static void trayicon_deinit(Trayicon *t)
 {
-	DeleteObject(t->hBitmap);
-	ReleaseDC(t->dummyHWND, t->hdc);
 	Shell_NotifyIcon(NIM_DELETE, &t->nid);
-	DestroyWindow(t->dummyHWND);
+	DestroyIcon(t->nid.hIcon);
+	DeleteObject(t->hBitmap);
+	DeleteObject(t->hFont);
+	DeleteDC(t->mdc);
 }
 
 static void windows_mod(Windows *wins, int state)
