@@ -36,6 +36,7 @@ typedef struct {
 	NOTIFYICONDATA nid;
 	HBITMAP hBitmap;
 	HFONT hFont;
+	HWND hwnd;
 	HDC mdc;
 	int bitmapWidth;
 } Trayicon;
@@ -88,15 +89,21 @@ static HICON trayicon_draw(Trayicon *t, char *text, int len)
 static void trayicon_init(Trayicon *t)
 {
 	HDC hdc;
+	HWND hwnd;
+	hwnd = CreateWindowA(
+		"STATIC", "virgo",
+		0, 0, 0, 0, 0,
+		NULL, NULL, NULL, NULL
+	);
 	t->bitmapWidth = GetSystemMetrics(SM_CXSMICON);
 	t->nid.cbSize = sizeof(t->nid);
-	t->nid.hWnd = NULL;
+	t->nid.hWnd = hwnd;
 	t->nid.uID = 100;
 	t->nid.uFlags = NIF_ICON;
-	hdc = GetDC(NULL);
+	hdc = GetDC(hwnd);
 	t->hBitmap = CreateCompatibleBitmap(hdc, t->bitmapWidth, t->bitmapWidth);
 	t->mdc = CreateCompatibleDC(hdc);
-	ReleaseDC(NULL, hdc);
+	ReleaseDC(t->hwnd, hdc);
 	SetBkColor(t->mdc, RGB(0x00, 0x00, 0x00));
 	SetTextColor(t->mdc, RGB(0x00, 0xFF, 0x00));
 	t->hFont = CreateFont(
@@ -127,6 +134,7 @@ static void trayicon_deinit(Trayicon *t)
 	DeleteObject(t->hBitmap);
 	DeleteObject(t->hFont);
 	DeleteDC(t->mdc);
+	DestroyWindow(t->hwnd);
 }
 
 static void windows_mod(Windows *wins, int state)
