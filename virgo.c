@@ -89,18 +89,17 @@ static HICON trayicon_draw(Trayicon *t, char *text, int len)
 static void trayicon_init(Trayicon *t)
 {
 	HDC hdc;
-	HWND hwnd;
-	hwnd = CreateWindowA(
+	t->hwnd = CreateWindowA(
 		"STATIC", "virgo",
 		0, 0, 0, 0, 0,
 		NULL, NULL, NULL, NULL
 	);
 	t->bitmapWidth = GetSystemMetrics(SM_CXSMICON);
 	t->nid.cbSize = sizeof(t->nid);
-	t->nid.hWnd = hwnd;
+	t->nid.hWnd = t->hwnd;
 	t->nid.uID = 100;
 	t->nid.uFlags = NIF_ICON;
-	hdc = GetDC(hwnd);
+	hdc = GetDC(t->hwnd);
 	t->hBitmap = CreateCompatibleBitmap(hdc, t->bitmapWidth, t->bitmapWidth);
 	t->mdc = CreateCompatibleDC(hdc);
 	ReleaseDC(t->hwnd, hdc);
