@@ -71,7 +71,7 @@ static void *stb__sbgrowf(void *arr, int increment, int itemsize)
 	}
 }
 
-static void trayicon_draw(Trayicon *t, char *text, int len)
+static HICON trayicon_draw(Trayicon *t, char *text, int len)
 {
 	ICONINFO iconInfo;
 	HBITMAP hOldBitmap;
@@ -81,11 +81,8 @@ static void trayicon_draw(Trayicon *t, char *text, int len)
 	TextOut(t->mdc, t->bitmapWidth / 4, 0, text, len);
 	SelectObject(t->mdc, hOldBitmap);
 	SelectObject(t->mdc, hOldFont);
-	if(t->nid.hIcon) {
-		DestroyIcon(t->nid.hIcon);
-	}
 	iconInfo = (ICONINFO){TRUE, 0, 0, t->hBitmap, t->hBitmap};
-	t->nid.hIcon = CreateIconIndirect(&iconInfo);
+	return CreateIconIndirect(&iconInfo);
 }
 
 static void trayicon_init(Trayicon *t)
@@ -106,7 +103,7 @@ static void trayicon_init(Trayicon *t)
 		-MulDiv(11, GetDeviceCaps(t->mdc, LOGPIXELSY), 72),
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, TEXT("Arial")
 	);
-	trayicon_draw(t, "1", 1);
+	t->nid.hIcon = trayicon_draw(t, "1", 1);
 	Shell_NotifyIcon(NIM_ADD, &t->nid);
 }
 
@@ -117,8 +114,9 @@ static void trayicon_set(Trayicon *t, int number)
 		return;
 	}
 	snumber[0] = number + '0';
-	snumber[1] = '\0';
-	trayicon_draw(t, snumber, 1);
+	snumber[1] = 0;
+	DestroyIcon(t->nid.hIcon);
+	t->nid.hIcon = trayicon_draw(t, snumber, 1);
 	Shell_NotifyIcon(NIM_MODIFY, &t->nid);
 }
 
