@@ -14,13 +14,6 @@
 #define stb__sbmaybegrow(a,n) (stb__sbneedgrow(a,(n)) ? stb__sbgrow(a,n) : 0)
 #define stb__sbgrow(a,n)      ((a) = stb__sbgrowf((a), (n), sizeof(*(a))))
 
-#ifdef __MINGW32__
-#ifdef RtlMoveMemory
-#undef RtlMoveMemory
-extern __stdcall void RtlMoveMemory(void *, void *, size_t);
-#endif
-#endif
-
 #ifndef MOD_NOREPEAT
 #define MOD_NOREPEAT 0x4000
 #endif
@@ -29,7 +22,7 @@ extern __stdcall void RtlMoveMemory(void *, void *, size_t);
 
 typedef struct {
 	HWND *windows;
-	int count;
+	unsigned count;
 } Windows;
 
 typedef struct {
@@ -38,27 +31,27 @@ typedef struct {
 	HFONT hFont;
 	HWND hwnd;
 	HDC mdc;
-	int bitmapWidth;
+	unsigned bitmapWidth;
 } Trayicon;
 
 typedef struct {
-	int current;
-	int handle_hotkeys;
+	unsigned current;
+	unsigned handle_hotkeys;
 	Windows desktops[NUM_DESKTOPS];
 	Trayicon trayicon;
 } Virgo;
 
-static void *stb__sbgrowf(void *arr, int increment, int itemsize)
+static void *stb__sbgrowf(void *arr, unsigned increment, unsigned itemsize)
 {
-	int dbl_cur = arr ? 2*stb__sbm(arr) : 0;
-	int min_needed = sb_count(arr) + increment;
-	int m = dbl_cur > min_needed ? dbl_cur : min_needed;
-	int *p;
+	unsigned dbl_cur = arr ? 2*stb__sbm(arr) : 0;
+	unsigned min_needed = sb_count(arr) + increment;
+	unsigned m = dbl_cur > min_needed ? dbl_cur : min_needed;
+	unsigned *p;
 	if (arr) {
 		p = HeapReAlloc(GetProcessHeap(), 0, stb__sbraw(arr),
-		                itemsize*m + sizeof(int)*2);
+		                itemsize*m + sizeof(unsigned)*2);
 	} else {
-		p = HeapAlloc(GetProcessHeap(), 0, itemsize*m + sizeof(int)*2);
+		p = HeapAlloc(GetProcessHeap(), 0, itemsize*m + sizeof(unsigned)*2);
 	}
 	if (p) {
 		if (!arr) {
@@ -68,11 +61,11 @@ static void *stb__sbgrowf(void *arr, int increment, int itemsize)
 		return p+2;
 	} else {
 		ExitProcess(1);
-		return (void *)(2*sizeof(int));
+		return (void *)(2*sizeof(unsigned));
 	}
 }
 
-static HICON trayicon_draw(Trayicon *t, char *text, int len)
+static HICON trayicon_draw(Trayicon *t, char *text, unsigned len)
 {
 	ICONINFO iconInfo;
 	HBITMAP hOldBitmap;
@@ -116,7 +109,7 @@ static void trayicon_init(Trayicon *t)
 	Shell_NotifyIcon(NIM_ADD, &t->nid);
 }
 
-static void trayicon_set(Trayicon *t, int number)
+static void trayicon_set(Trayicon *t, unsigned number)
 {
 	char snumber[2];
 	if (!(number>=0 && number<=9)) {
@@ -139,9 +132,9 @@ static void trayicon_deinit(Trayicon *t)
 	DestroyWindow(t->hwnd);
 }
 
-static void windows_mod(Windows *wins, int state)
+static void windows_mod(Windows *wins, unsigned state)
 {
-	int i;
+	unsigned i;
 	for (i=0; i<wins->count; i++) {
 		ShowWindow(wins->windows[i], state);
 	}
@@ -169,25 +162,23 @@ static void windows_add(Windows *wins, HWND hwnd)
 
 static void windows_del(Windows *wins, HWND hwnd)
 {
-	int i, m;
+	unsigned i, e, m;
 	for (i=0; i<wins->count; i++) {
 		if (wins->windows[i] != hwnd) {
 			continue;
 		}
 		m = wins->count-i-1;
 		if (m > 0) {
-			RtlMoveMemory(
-			    &(wins->windows[i]),
-			    &(wins->windows[i+1]),
-			    sizeof(HWND)*m
-			);
+			for (e=i; e<m; e++) {
+				wins->windows[e] = wins->windows[e+1];
+			}
 		}
 		wins->count--;
 		break;
 	}
 }
 
-static int is_valid_window(HWND hwnd)
+static unsigned is_valid_window(HWND hwnd)
 {
 	WINDOWINFO wi;
 	wi.cbSize = sizeof(wi);
@@ -195,7 +186,7 @@ static int is_valid_window(HWND hwnd)
 	return (wi.dwStyle & WS_VISIBLE) && !(wi.dwExStyle & WS_EX_TOOLWINDOW);
 }
 
-static void register_hotkey(int id, int mod, int vk)
+static void register_hotkey(unsigned id, unsigned mod, unsigned vk)
 {
 	if (!RegisterHotKey(NULL, id, mod, vk)) {
 		MessageBox(NULL, "could not register hotkey", "error",
@@ -206,7 +197,7 @@ static void register_hotkey(int id, int mod, int vk)
 
 static BOOL enum_func(HWND hwnd, LPARAM lParam)
 {
-	int i, e;
+	unsigned i, e;
 	Virgo *v;
 	Windows *desk;
 	v = (Virgo *) lParam;
@@ -227,7 +218,7 @@ static BOOL enum_func(HWND hwnd, LPARAM lParam)
 
 static void virgo_update(Virgo *v)
 {
-	int i, e;
+	unsigned i, e;
 	Windows *desk;
 	HWND hwnd;
 	for (i=0; i<NUM_DESKTOPS; i++) {
@@ -251,7 +242,7 @@ static void virgo_update(Virgo *v)
 
 static void virgo_toggle_hotkeys(Virgo *v)
 {
-	int i;
+	unsigned i;
 	v->handle_hotkeys = !v->handle_hotkeys;
 	if (v->handle_hotkeys) {
 		for (i=0; i<NUM_DESKTOPS; i++) {
@@ -268,7 +259,7 @@ static void virgo_toggle_hotkeys(Virgo *v)
 
 static void virgo_init(Virgo *v)
 {
-	int i;
+	unsigned i;
 	v->handle_hotkeys = 1;
 	for (i=0; i<NUM_DESKTOPS; i++) {
 		register_hotkey(i*2, MOD_ALT|MOD_NOREPEAT, i+1+0x30);
@@ -281,7 +272,7 @@ static void virgo_init(Virgo *v)
 
 static void virgo_deinit(Virgo *v)
 {
-	int i;
+	unsigned i;
 	for (i=0; i<NUM_DESKTOPS; i++) {
 		windows_show(&v->desktops[i]);
 		sb_free(v->desktops[i].windows);
@@ -289,7 +280,7 @@ static void virgo_deinit(Virgo *v)
 	trayicon_deinit(&v->trayicon);
 }
 
-static void virgo_move_to_desk(Virgo *v, int desk)
+static void virgo_move_to_desk(Virgo *v, unsigned desk)
 {
 	HWND hwnd;
 	if (v->current == desk) {
@@ -305,7 +296,7 @@ static void virgo_move_to_desk(Virgo *v, int desk)
 	ShowWindow(hwnd, SW_HIDE);
 }
 
-static void virgo_go_to_desk(Virgo *v, int desk)
+static void virgo_go_to_desk(Virgo *v, unsigned desk)
 {
 	if (v->current == desk) {
 		return;
