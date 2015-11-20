@@ -162,14 +162,13 @@ static void windows_add(Windows *wins, HWND hwnd)
 
 static void windows_del(Windows *wins, HWND hwnd)
 {
-	unsigned i, e, m;
+	unsigned i, e;
 	for (i=0; i<wins->count; i++) {
 		if (wins->windows[i] != hwnd) {
 			continue;
 		}
-		m = wins->count-i-1;
-		if (m > 0) {
-			for (e=i; e<m; e++) {
+		if (i != wins->count-1) {
+			for (e=i; e<wins->count-1; e++) {
 				wins->windows[e] = wins->windows[e+1];
 			}
 		}
