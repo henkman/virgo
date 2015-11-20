@@ -77,8 +77,7 @@ static HICON trayicon_draw(Trayicon *t, char *text, unsigned len)
 	SelectObject(t->mdc, hOldFont);
 	iconInfo.fIcon = TRUE;
 	iconInfo.xHotspot = iconInfo.yHotspot = 0;
-	iconInfo.hbmMask = t->hBitmap;
-	iconInfo.hbmColor = t->hBitmap;
+	iconInfo.hbmMask = iconInfo.hbmColor = t->hBitmap;
 	return CreateIconIndirect(&iconInfo);
 }
 
@@ -112,7 +111,7 @@ static void trayicon_init(Trayicon *t)
 static void trayicon_set(Trayicon *t, unsigned number)
 {
 	char snumber[2];
-	if (!(number>=0 && number<=9)) {
+	if (number>9) {
 		return;
 	}
 	snumber[0] = number + '0';
@@ -245,8 +244,8 @@ static void virgo_toggle_hotkeys(Virgo *v)
 	v->handle_hotkeys = !v->handle_hotkeys;
 	if (v->handle_hotkeys) {
 		for (i=0; i<NUM_DESKTOPS; i++) {
-			register_hotkey(i*2, MOD_ALT|MOD_NOREPEAT, i+1+0x30);
-			register_hotkey(i*2+1, MOD_CONTROL|MOD_NOREPEAT, i+1+0x30);
+			register_hotkey(i*2, MOD_ALT|MOD_NOREPEAT, i+1+'0');
+			register_hotkey(i*2+1, MOD_CONTROL|MOD_NOREPEAT, i+1+'0');
 		}
 	} else {
 		for (i=0; i<NUM_DESKTOPS; i++) {
@@ -261,8 +260,8 @@ static void virgo_init(Virgo *v)
 	unsigned i;
 	v->handle_hotkeys = 1;
 	for (i=0; i<NUM_DESKTOPS; i++) {
-		register_hotkey(i*2, MOD_ALT|MOD_NOREPEAT, i+1+0x30);
-		register_hotkey(i*2+1, MOD_CONTROL|MOD_NOREPEAT, i+1+0x30);
+		register_hotkey(i*2, MOD_ALT|MOD_NOREPEAT, i+1+'0');
+		register_hotkey(i*2+1, MOD_CONTROL|MOD_NOREPEAT, i+1+'0');
 	}
 	register_hotkey(i*2, MOD_ALT|MOD_CONTROL|MOD_SHIFT|MOD_NOREPEAT, 'Q');
 	register_hotkey(i*2+1, MOD_ALT|MOD_CONTROL|MOD_SHIFT|MOD_NOREPEAT, 'S');
