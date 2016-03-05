@@ -81,14 +81,59 @@ static HICON trayicon_draw(Trayicon *t, char *text, unsigned len)
 	return CreateIconIndirect(&iconInfo);
 }
 
+static Virgo* get_set_virgo(Virgo* v, int nflag)
+{
+	static Virgo* s_virgo = NULL;
+	if (1 == nflag)
+	{
+		s_virgo = v;
+	}
+	return s_virgo;
+}
+
+static UINT get_taskbarcreated_msg()
+{
+	static UINT s_uMsg = 0;
+	if (!s_uMsg)
+	{
+		s_uMsg = RegisterWindowMessage(TEXT("TaskbarCreated"));
+	}
+	return s_uMsg;
+}
+
+static LRESULT CALLBACK window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{ 
+    if (uMsg == get_taskbarcreated_msg())
+	{
+		Virgo* v = get_set_virgo(NULL, 0);
+		Trayicon* t = &v->trayicon;
+		
+		char snumber[2] = { 0 };
+		if ((v->current+1) > 9)
+		{
+			return 0;
+		}
+		snumber[0] = (v->current+1) + '0';
+		snumber[1] = 0;
+		DestroyIcon(t->nid.hIcon);
+		t->nid.hIcon = trayicon_draw(t, snumber, 1);
+		Shell_NotifyIcon(NIM_ADD, &t->nid);
+		
+		return 0;
+	}
+	
+    return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+
 static void trayicon_init(Trayicon *t)
 {
 	HDC hdc;
-	t->hwnd = CreateWindowA(
-	              "STATIC", "virgo",
-	              0, 0, 0, 0, 0,
-	              NULL, NULL, NULL, NULL
-	          );
+	WNDCLASS   wndclass = { 0 };
+    wndclass.lpfnWndProc   = window_proc;
+    wndclass.lpszClassName = TEXT("virgo_class");
+	RegisterClass(&wndclass);
+
+	t->hwnd = CreateWindow(TEXT("virgo_class"), TEXT("virgo"), 0, 0, 0, 0, 0, NULL, NULL, 0, NULL);
 	t->bitmapWidth = GetSystemMetrics(SM_CXSMICON);
 	t->nid.cbSize = sizeof(t->nid);
 	t->nid.hWnd = t->hwnd;
@@ -311,6 +356,10 @@ void __main(void)
 {
 	Virgo v = {0};
 	MSG msg;
+
+	get_set_virgo(&v, 1);
+	get_taskbarcreated_msg();
+
 	virgo_init(&v);
 	while (GetMessage(&msg, NULL, 0, 0)) {
 		if (msg.message != WM_HOTKEY) {
