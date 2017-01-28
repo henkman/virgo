@@ -178,10 +178,9 @@ static void windows_del(Windows *wins, HWND hwnd)
 
 static unsigned is_valid_window(HWND hwnd)
 {
-	WINDOWINFO wi;
-	wi.cbSize = sizeof(wi);
-	GetWindowInfo(hwnd, &wi);
-	return (wi.dwStyle & WS_VISIBLE) && !(wi.dwExStyle & WS_EX_TOOLWINDOW);
+	return IsWindowVisible(hwnd)
+		&& hwnd!=FindWindow("Progman", NULL)
+		&& hwnd!=FindWindow("Shell_TrayWnd", NULL);
 }
 
 static void register_hotkey(unsigned id, unsigned mod, unsigned vk)
