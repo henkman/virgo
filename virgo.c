@@ -19,6 +19,7 @@
 #endif
 
 #define NUM_DESKTOPS 4
+#define NUM_PINNED 8
 
 typedef struct {
 	HWND *windows;
@@ -39,6 +40,7 @@ typedef struct {
 	unsigned handle_hotkeys;
 	Windows desktops[NUM_DESKTOPS];
 	Trayicon trayicon;
+	HWND pinned[NUM_PINNED];
 } Virgo;
 
 static void *stb__sbgrowf(void *arr, unsigned increment, unsigned itemsize)
@@ -182,6 +184,38 @@ static void register_hotkey(unsigned id, unsigned mod, unsigned vk)
 	}
 }
 
+static unsigned virgo_is_pinned(Virgo *v, HWND hwnd) {
+	unsigned i;
+	for (i = 0; i < NUM_PINNED; ++i) {
+		if (v->pinned[i] == hwnd) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+static void virgo_toggle_pin(Virgo *v, HWND hwnd) {
+	unsigned i;
+	unsigned empty = NUM_PINNED;
+	for (i = 0; i < NUM_PINNED; ++i) {
+		if (v->pinned[i] == hwnd) {
+			v->pinned[i] = 0;
+			windows_add(&v->desktops[v->current], hwnd);
+			return;
+		}
+		if (!v->pinned[i]) {
+			empty = i;
+		}
+	}
+	if (empty == NUM_PINNED) {
+		MessageBox(NULL, "reached pinned windows limit", "error",
+				   MB_ICONEXCLAMATION);
+		return;
+	}
+	v->pinned[empty] = hwnd;
+	windows_del(&v->desktops[v->current], hwnd);
+}
+
 static BOOL enum_func(HWND hwnd, LPARAM lParam)
 {
 	unsigned i, e;
@@ -199,6 +233,9 @@ static BOOL enum_func(HWND hwnd, LPARAM lParam)
 			}
 		}
 	}
+	if (virgo_is_pinned(v, hwnd)) {
+		return 1;
+	}
 	windows_add(&(v->desktops[v->current]), hwnd);
 	return 1;
 }
@@ -215,6 +252,12 @@ static void virgo_update(Virgo *v)
 			if (!GetWindowThreadProcessId(desk->windows[e], NULL)) {
 				windows_del(desk, hwnd);
 			}
+		}
+	}
+	for (i = 0; i < NUM_PINNED; i++) {
+		hwnd = v->pinned[i];
+		if (!GetWindowThreadProcessId(hwnd, NULL)) {
+			v->pinned[i] = 0;
 		}
 	}
 	desk = &v->desktops[v->current];
@@ -256,6 +299,8 @@ static void virgo_init(Virgo *v)
 					'Q');
 	register_hotkey(i * 2 + 1, MOD_ALT | MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT,
 					'S');
+	register_hotkey(i * 2 + 2, MOD_ALT | MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT,
+					'P');
 	trayicon_init(&v->trayicon);
 }
 
@@ -312,6 +357,8 @@ void __main(void)
 		}
 		if (msg.wParam == NUM_DESKTOPS * 2 + 1) {
 			virgo_toggle_hotkeys(&v);
+		} else if (msg.wParam == NUM_DESKTOPS * 2 + 2) {
+			virgo_toggle_pin(&v, GetForegroundWindow());
 		} else if (msg.wParam % 2 == 0) {
 			virgo_go_to_desk(&v, msg.wParam / 2);
 		} else {
