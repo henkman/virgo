@@ -322,6 +322,9 @@ static void virgo_move_to_desk(Virgo *v, unsigned desk)
 	}
 	virgo_update(v);
 	hwnd = GetForegroundWindow();
+	if (virgo_is_pinned(v, hwnd)) {
+		return;
+	}
 	if (!hwnd || !is_valid_window(hwnd)) {
 		return;
 	}
