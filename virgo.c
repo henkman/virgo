@@ -23,6 +23,7 @@
 typedef struct {
 	HWND *windows;
 	unsigned count;
+	HWND focus;
 } Windows;
 
 typedef struct {
@@ -40,6 +41,18 @@ typedef struct {
 	Windows desktops[NUM_DESKTOPS];
 	Trayicon trayicon;
 } Virgo;
+
+static void save_current_desktops_focus(Windows* desktops) {
+	desktops->focus = GetForegroundWindow();
+}
+
+static unsigned is_valid_window(HWND hwnd);
+static void restore_current_desktops_focus(Windows* desktops) {
+	if (!desktops->focus || !is_valid_window(desktops->focus)) {
+		return;
+	}
+	SetForegroundWindow(desktops->focus);
+}
 
 static void *stb__sbgrowf(void *arr, unsigned increment, unsigned itemsize)
 {
@@ -291,8 +304,10 @@ static void virgo_go_to_desk(Virgo *v, unsigned desk)
 		return;
 	}
 	virgo_update(v);
+	save_current_desktops_focus(&v->desktops[v->current]);
 	windows_hide(&v->desktops[v->current]);
 	windows_show(&v->desktops[desk]);
+	restore_current_desktops_focus(&v->desktops[desk]);
 	v->current = desk;
 	trayicon_set(&v->trayicon, v->current + 1);
 }
